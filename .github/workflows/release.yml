@@ -3,12 +3,13 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*' # v1.0.0 や v0.1.0 のようなタグがプッシュされた時だけ動く
+      - 'v*'
 
 permissions:
-  contents: write # Releaseを作成するために必須
+  contents: write
 
 jobs:
+  # ジョブ1：GitHubのクラウド環境でビルドしてReleaseを作る
   build-and-release:
     runs-on: ubuntu-latest
     steps:
@@ -33,4 +34,26 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: shared
-          generate_release_notes: true # コミット履歴からリリースノートを自動生成
+          generate_release_notes: true
+
+  # ジョブ2：ビルド完了後、オンプレのself-hostedランナーで自動デプロイ
+  deploy:
+    needs: build-and-release # ← ジョブ1が成功した後に自動実行される
+    runs-on: [ self-hosted ]
+    steps:
+      - name: Download release binary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # タグ名（github.ref_name）を指定してReleaseから直接ダウンロード
+          gh release download "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "shared" \
+            --dir /tmp \
+            --clobber
+
+      - name: Install and Restart Service
+        run: |
+          chmod +x /tmp/shared
+          sudo mv /tmp/shared /usr/local/bin/shared
+          sudo systemctl restart shared
