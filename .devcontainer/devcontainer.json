@@ -1,0 +1,12 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/go .
+{
+	"name": "Go",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"runArgs": [
+		"--device=/dev/ttyACM0:/dev/ttyACM0"
+	],
+	"postCreateCommand": "sudo usermod -aG dialout vscode"
+}
