@@ -1,0 +1,36 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # v1.0.0 や v0.1.0 のようなタグがプッシュされた時だけ動く
+
+permissions:
+  contents: write # Releaseを作成するために必須
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.4'
+
+      - name: Test
+        run: go test -v ./...
+
+      - name: Build binary
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: go build -o shared .
+
+      - name: Create Release and Upload Binary
+        uses: softprops/action-gh-release@v2
+        with:
+          files: shared
+          generate_release_notes: true # コミット履歴からリリースノートを自動生成
