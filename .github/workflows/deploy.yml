@@ -1,0 +1,29 @@
+name: Deploy to Self-Hosted
+
+on:
+  release:
+    types: [ published ] # Releaseが公開された時だけ発火
+
+permissions:
+  contents: read # Releaseの成果物をダウンロードするために必要
+
+jobs:
+  deploy:
+    runs-on: [ self-hosted ]
+    steps:
+      - name: Download release binary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # checkoutはせず、該当リリースのバイナリだけを /tmp にダウンロード
+          gh release download "${{ github.event.release.tag_name }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "shared" \
+            --dir /tmp \
+            --clobber
+
+      - name: Install and Restart Service
+        run: |
+          chmod +x /tmp/shared
+          sudo mv /tmp/shared /usr/local/bin/shared
+          sudo systemctl restart shared
