@@ -39,7 +39,15 @@ jobs:
   # ジョブ2：ビルド完了後、オンプレのself-hostedランナーで自動デプロイ
   deploy:
     needs: build-and-release # ← ジョブ1が成功した後に自動実行される
-    runs-on: [ self-hosted ]
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - cml1
+          - cml3
+    runs-on:
+      - self-hosted
+      - ${{ matrix.target }}
     steps:
       - name: Download release binary
         env:
